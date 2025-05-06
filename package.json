@@ -1,7 +1,7 @@
 {
-  "name": "cryptopimp-mint-bot",
+  "name": "cryptopimps-mint-bot",
   "version": "1.0.0",
-  "description": "A Discord bot that tracks CryptoPimp mints.",
+  "description": "A Discord bot that tracks CryptoPimps mints.",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
