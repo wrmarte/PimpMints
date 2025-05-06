@@ -1,0 +1,54 @@
+node index.js
+
+ 
+
+/app/node_modules/discord.js/src/client/websocket/WebSocketManager.js:139
+
+    const invalidToken = new DiscordjsError(ErrorCodes.TokenInvalid);
+
+                         ^
+
+ 
+
+Error [TokenInvalid]: An invalid token was provided.
+
+    at WebSocketManager.connect (/app/node_modules/discord.js/src/client/websocket/WebSocketManager.js:139:26)
+
+    at Client.login (/app/node_modules/discord.js/src/client/Client.js:229:21)
+
+    at Object.<anonymous> (/app/index.js:76:8)
+
+    at Module._compile (node:internal/modules/cjs/loader:1364:14)
+
+    at Module._extensions..js (node:internal/modules/cjs/loader:1422:10)
+
+    at Module.load (node:internal/modules/cjs/loader:1203:32)
+
+    at Module._load (node:internal/modules/cjs/loader:1019:12)
+
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:128:12)
+
+    at node:internal/main/run_main_module:28:49 {
+
+  code: 'TokenInvalid'
+
+}
+
+ 
+
+Node.js v18.20.5
+
+
+Message @GuyLeDouce🥱
+﻿
+
+
+
+
+
+
+
+to select
+
+
+
