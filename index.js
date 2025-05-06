@@ -1,6 +1,6 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits } = require('discord.js');
-const { ethers } = require('ethers');
+const { JsonRpcProvider, Contract, ZeroAddress, id, Interface } = require('ethers');
 
 const client = new Client({
   intents: [
@@ -10,7 +10,7 @@ const client = new Client({
   ],
 });
 
-const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL);
+const provider = new JsonRpcProvider(process.env.RPC_URL);
 const contractAddress = process.env.CONTRACT_ADDRESS;
 const channelId = process.env.DISCORD_CHANNEL_ID;
 const mintPrice = 0.0069;
@@ -18,8 +18,9 @@ const mintPrice = 0.0069;
 const abi = [
   "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)"
 ];
+const iface = new Interface(abi);
+const contract = new Contract(contractAddress, abi, provider);
 
-const contract = new ethers.Contract(contractAddress, abi, provider);
 let lastBlockChecked = 0;
 
 client.once('ready', async () => {
@@ -32,15 +33,18 @@ client.once('ready', async () => {
       fromBlock: lastBlockChecked + 1,
       toBlock: blockNumber,
       address: contractAddress,
-      topics: [ethers.utils.id("Transfer(address,address,uint256)")]
+      topics: [id("Transfer(address,address,uint256)")]
     });
 
     const mints = {};
 
     for (const log of logs) {
-      const parsed = contract.interface.parseLog(log);
+      const parsed = iface.parseLog(log);
       const to = parsed.args.to;
-      if (parsed.args.from !== ethers.constants.AddressZero) continue;
+      const from = parsed.args.from;
+
+      if (from !== ZeroAddress) continue;
+
       if (!mints[to]) mints[to] = 0;
       mints[to]++;
     }
@@ -48,7 +52,7 @@ client.once('ready', async () => {
     for (const wallet in mints) {
       const qty = mints[wallet];
       const ethSpent = (qty * mintPrice).toFixed(4);
-      const msg = `🧯 **New CryptoPimp Mint!**\n👛 Wallet: \`${wallet}\`\n🪙 Quantity: **${qty}**\n💸 ETH Spent: **${ethSpent} ETH**`;
+      const msg = `🧯 **New CryptoPimp Mint on Base!**\n👛 Wallet: \`${wallet}\`\n🪙 Quantity: **${qty}**\n💸 ETH Spent: **${ethSpent} ETH**`;
       await channel.send(msg);
     }
 
@@ -61,7 +65,7 @@ client.on('messageCreate', async message => {
     const fakeWallet = '0xDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF';
     const fakeQty = Math.floor(Math.random() * 5) + 1;
     const fakeEth = (fakeQty * mintPrice).toFixed(4);
-    const testMsg = `🧪 **Test Mint Triggered**\n👛 Wallet: \`${fakeWallet}\`\n🪙 Quantity: **${fakeQty}**\n💸 ETH Spent: **${fakeEth} ETH**`;
+    const testMsg = `🧪 **Test Mint Triggered (Base Sim)**\n👛 Wallet: \`${fakeWallet}\`\n🪙 Quantity: **${fakeQty}**\n💸 ETH Spent: **${fakeEth} ETH**`;
 
     const channel = await client.channels.fetch(channelId);
     await channel.send(testMsg);
