@@ -65,7 +65,7 @@ client.on('messageCreate', async message => {
     const fakeWallet = '0xDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF';
     const fakeQty = Math.floor(Math.random() * 5) + 1;
     const fakeEth = (fakeQty * mintPrice).toFixed(4);
-    const testMsg = `> hello🧪 **Test Mint Triggered (Base Sim)**\n👛 Wallet: \`${fakeWallet}\`\n🪙 Quantity: **${fakeQty}**\n💸 ETH Spent: **${fakeEth} ETH**`;
+    const testMsg = `>  🧪 **Test Mint Triggered (Base Sim)**\n >  👛 Wallet: \`${fakeWallet}\`\n >  🪙 Quantity: **${fakeQty}**\n💸 ETH Spent: **${fakeEth} ETH**`;
 
     const channel = await client.channels.fetch(channelId);
     await channel.send(testMsg);
