@@ -69,7 +69,7 @@ client.on('messageCreate', async message => {
 
     const channel = await client.channels.fetch(channelId);
     await channel.send(testMsg);
-    await message.reply('✅ Test mint sent!');
+    await message.reply('`>  🧪 **__Test Mint Triggered (Base Sim)__**\n >  👛 Wallet: \`${fakeWallet}\`\n >  🪙 Quantity: **${fakeQty}**\n >  💸 ETH Spent: **${fakeEth} ETH**`;');
   }
 });
 
