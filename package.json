@@ -1,5 +1,5 @@
 {
-  "name": "cryptopimps-mint-bot",
+  "name": "pimpmints",
   "version": "1.0.0",
   "description": "A Discord bot that tracks CryptoPimps mints.",
   "main": "index.js",
