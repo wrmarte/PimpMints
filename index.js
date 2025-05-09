@@ -73,8 +73,6 @@ client.on('messageCreate', async message => {
   }
 });
 
-const { EmbedBuilder } = require('discord.js');
-
 client.on('messageCreate', async message => {
   if (message.content === '!minttest') {
     const fakeWallet = '0xDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF';
