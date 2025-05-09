@@ -60,15 +60,25 @@ client.once('ready', async () => {
   });
 });
 
+const { EmbedBuilder } = require('discord.js');
+
 client.on('messageCreate', async message => {
   if (message.content === '!testmint') {
     const fakeWallet = '0xDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF';
     const fakeQty = Math.floor(Math.random() * 5) + 1;
     const fakeEth = (fakeQty * mintPrice).toFixed(4);
-    const testMsg = `>  🧪 **__TEST MINT TRIGGED (Base Sim)__**\n >  📇 Wallet: \`${fakeWallet}\`\n >  🪶 Quantity: **${fakeQty}**\n >  💰 ETH Spent: **${fakeEth} ETH**`;
+
+    const embed = new EmbedBuilder()
+      .setTitle('🧪 TEST MINT TRIGGERED (Base Sim)')
+      .setDescription(
+        `📇 Wallet: \`${fakeWallet}\`\n` +
+        `🪶 Quantity: **${fakeQty}**\n` +
+        `💰 ETH Spent: **${fakeEth} ETH**`
+      )
+      .setColor(0xff00ff); // Pink hex color — change to whatever you want
 
     const channel = await client.channels.fetch(channelId);
-    await channel.send(testMsg);
+    await channel.send({ embeds: [embed] });
     await message.reply(':point_up:');
   }
 });
