@@ -73,4 +73,27 @@ client.on('messageCreate', async message => {
   }
 });
 
+const { EmbedBuilder } = require('discord.js');
+
+client.on('messageCreate', async message => {
+  if (message.content === '!minttest') {
+    const fakeWallet = '0xDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF';
+    const fakeQty = Math.floor(Math.random() * 5) + 1;
+    const fakeEth = (fakeQty * mintPrice).toFixed(4);
+
+    const embed = new EmbedBuilder()
+      .setTitle('🧪 TEST MINT TRIGGERED (Base Sim)')
+      .setDescription(
+        `📇 Wallet: \`${fakeWallet}\`\n` +
+        `🪶 Quantity: **${fakeQty}**\n` +
+        `💰 ETH Spent: **${fakeEth} ETH**`
+      )
+      .setColor(0x00ffcc); // Teal accent bar (use any hex code)
+
+    const channel = await client.channels.fetch(channelId);
+    await channel.send({ embeds: [embed] });
+    await message.reply(':point_up:');
+  }
+});
+
 client.login(process.env.DISCORD_BOT_TOKEN);
