@@ -65,21 +65,15 @@ client.on('messageCreate', async message => {
     const fakeWallet = '0xDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF';
     const fakeQty = Math.floor(Math.random() * 5) + 1;
     const fakeEth = (fakeQty * mintPrice).toFixed(4);
-
-    const embed = new EmbedBuilder()
-      .setTitle('🧪 TEST MINT TRIGGERED (Base Sim)')
-      .setDescription(
-        `📇 Wallet: \`${fakeWallet}\`\n` +
-        `🪶 Quantity: **${fakeQty}**\n` +
-        `💰 ETH Spent: **${fakeEth} ETH**`
-      )
-      .setColor(0xff00ff); // Pink hex color — change to whatever you want
+    const testMsg = `>  🧪 **__TEST MINT TRIGGED (Base Sim)__**\n >  📇 Wallet: \`${fakeWallet}\`\n >  🪶 Quantity: **${fakeQty}**\n >  💰 ETH Spent: **${fakeEth} ETH**`;
 
     const channel = await client.channels.fetch(channelId);
-    await channel.send({ embeds: [embed] });
+    await channel.send({embeds: [embed]testMsg});
     await message.reply(':point_up:');
+
+.setColor(0xff00ff); // Pink hex color — change to whatever you want
+
   }
 });
-  
 
 client.login(process.env.DISCORD_BOT_TOKEN);
