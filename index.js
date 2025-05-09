@@ -52,7 +52,7 @@ client.once('ready', async () => {
     for (const wallet in mints) {
       const qty = mints[wallet];
       const ethSpent = (qty * mintPrice).toFixed(4);
-      const msg = `✳️ **__NEW CRYPTOPIMPS MINT ON BASE!__**\n >  📇 Wallet: \`${wallet}\`\n >  🪶 Quantity: **${qty}**\n >  💰 ETH Spent: **${ethSpent} ETH**`;
+      const msg = `>  ✳️ **__NEW CRYPTOPIMPS MINT ON BASE!__**\n >  📇 Wallet: \`${wallet}\`\n >  🪶 Quantity: **${qty}**\n >  💰 ETH Spent: **${ethSpent} ETH**`;
       await channel.send(msg);
     }
 
