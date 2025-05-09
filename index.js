@@ -68,7 +68,7 @@ client.on('messageCreate', async message => {
     const testMsg = `>  🧪 **__TEST MINT TRIGGED (Base Sim)__**\n >  📇 Wallet: \`${fakeWallet}\`\n >  🪶 Quantity: **${fakeQty}**\n >  💰 ETH Spent: **${fakeEth} ETH**`;
 
     const channel = await client.channels.fetch(channelId);
-    await channel.send(🏆testMsg);
+    await channel.send(testMsg);
     await message.reply(':point_up:');
 
   }
