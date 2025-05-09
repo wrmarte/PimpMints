@@ -71,10 +71,11 @@ client.on('messageCreate', async message => {
     await channel.send(testMsg);
     await message.reply(':point_up:');
   }
-});
+
+const { EmbedBuilder } = require('discord.js');
 
 client.on('messageCreate', async message => {
-  if (message.content === '!minttest') {
+  if (message.content === '!testtest') {
     const fakeWallet = '0xDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF';
     const fakeQty = Math.floor(Math.random() * 5) + 1;
     const fakeEth = (fakeQty * mintPrice).toFixed(4);
@@ -92,6 +93,8 @@ client.on('messageCreate', async message => {
     await channel.send({ embeds: [embed] });
     await message.reply(':point_up:');
   }
+});
+  
 });
 
 client.login(process.env.DISCORD_BOT_TOKEN);
