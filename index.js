@@ -65,12 +65,7 @@ client.on('messageCreate', async message => {
     const fakeWallet = '0xDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF';
     const fakeQty = Math.floor(Math.random() * 5) + 1;
     const fakeEth = (fakeQty * mintPrice).toFixed(4);
-    const hexColor = '#FF00FF';
-    const testMsg = `>  🧪 **__TEST MINT TRIGGED (Base Sim)__**\n
-      >  📇 Wallet: \`${fakeWallet}\`\n 
-      >  🪶 Quantity: **${fakeQty}**\n 
-      >  💰 ETH Spent: **${fakeEth} ETH**\n
-      🎨 Embed Color (for reference): \`${hexColor}\` `;
+    const testMsg = `>  🧪 **__TEST MINT TRIGGED (Base Sim)__**\n >  📇 Wallet: \`${fakeWallet}\`\n >  🪶 Quantity: **${fakeQty}**\n >  💰 ETH Spent: **${fakeEth} ETH**\n `;
 
     const channel = await client.channels.fetch(channelId);
     await channel.send(testMsg);
