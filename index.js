@@ -97,9 +97,12 @@ client.on('messageCreate', async message => {
   }
 });
 
-client.on('messageCreate', async message => {
-  if (message.content === '!testmint') {
-    await message.channel.send('🧪 Test mint message received!');
-  }
-});
+try {
+  const channel = await client.channels.fetch(channelId);
+  await channel.send({ embeds: [embed], components: [row] });
+} catch (err) {
+  console.error('❌ Failed to send embed:', err);
+}
+
+
 client.login(process.env.DISCORD_BOT_TOKEN);
