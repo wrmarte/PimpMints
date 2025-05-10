@@ -52,7 +52,7 @@ client.once('ready', async () => {
     for (const wallet in mints) {
       const qty = mints[wallet];
       const ethSpent = (qty * mintPrice).toFixed(4);
-      const msg = `>  ✳️ **__NEW CRYPTOPIMPS MINT ON BASE!__**\n >  📇 Wallet: \`${wallet}\`\n >  🪶 Quantity: **${qty}**\n >  💰 ETH Spent: **${ethSpent} ETH**`;
+      const msg = `>  ✳️ **__NEW CRYPTOPIMPS MINT ON BASE!__**\n >  📇 Wallet: \`${wallet}\`\n >  🪶 Quantity: **${qty}**\n >  💰 ETH Spent: **${ethSpent} ETH**\n  `;
       await channel.send(msg);
     }
 
@@ -65,7 +65,7 @@ client.on('messageCreate', async message => {
     const fakeWallet = '0xDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF';
     const fakeQty = Math.floor(Math.random() * 5) + 1;
     const fakeEth = (fakeQty * mintPrice).toFixed(4);
-    const testMsg = `>  🧪 **__TEST MINT TRIGGED (Base Sim)__**\n >  📇 Wallet: \`${fakeWallet}\`\n >  🪶 Quantity: \'${fakeQty}\'\n >  💰 ETH Spent: \'${fakeEth} ETH\'\n  `;
+    const testMsg = `>  🧪 **__TEST MINT TRIGGED (Base Sim)__**\n >  📇 Wallet: \`${fakeWallet}\`\n >  🪶 Quantity: **${fakeQty}**\n >  💰 ETH Spent: **${fakeEth} ETH**\n  `;
 
     const channel = await client.channels.fetch(channelId);
     await channel.send(testMsg);
