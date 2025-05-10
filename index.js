@@ -87,7 +87,7 @@ client.on('messageCreate', async message => {
       new ButtonBuilder()
         .setLabel('🔗 View on OpenSea')
         .setStyle(ButtonStyle.Link)
-        .setURL(`https://opensea.io/assets/base/0xYourContractAddress/${tokenId}`)
+        .setURL(`https://opensea.io/assets/base/0xC38E2Ae060440c9269CcEB8C0EA8019a66Ce8927/${tokenId}`)
     );
 
     try {
