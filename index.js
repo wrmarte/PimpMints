@@ -96,4 +96,10 @@ client.on('messageCreate', async message => {
     await message.reply(':point_up:');
   }
 });
+
+client.on('messageCreate', async message => {
+  if (message.content === '!testmint') {
+    await message.channel.send('🧪 Test mint message received!');
+  }
+});
 client.login(process.env.DISCORD_BOT_TOKEN);
