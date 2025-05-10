@@ -1,6 +1,8 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits } = require('discord.js');
 const { JsonRpcProvider, Contract, ZeroAddress, id, Interface } = require('ethers');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+
 
 const client = new Client({
   intents: [
@@ -60,49 +62,44 @@ client.once('ready', async () => {
   });
 });
 
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-
 client.on('messageCreate', async message => {
   if (message.content === '!testmint') {
     const fakeWallet = '0xDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF';
-    const fakeQty = Math.floor(Math.random() * 5) + 1;
-    const fakeTokenId = Math.floor(Math.random() * 10000);
-    const fakeEth = (fakeQty * mintPrice).toFixed(4);
-    const fakeImage = 'https://via.placeholder.com/400x400.png?text=NFT+Preview'; // Replace with real image if you have one
+    const fakeQty = 2;
+    const fakeEth = (fakeQty * 0.0069).toFixed(4);
+    const tokenId = 1234;
 
     const embed = new EmbedBuilder()
       .setTitle('🧪 Test Mint Triggered')
-      .setDescription('Simulated mint event on Base network')
+      .setDescription('Simulated mint on Base network.')
       .addFields(
-        { name: '📇 Wallet', value: `\`${fakeWallet}\``, inline: false },
-        { name: '🪶 Quantity', value: `**${fakeQty}**`, inline: true },
-        { name: '💰 ETH Spent', value: `**${fakeEth} ETH**`, inline: true },
-        { name: '🆔 Token ID', value: `#${fakeTokenId}`, inline: true }
+        { name: '📇 Wallet', value: `\`${fakeWallet}\`` },
+        { name: '🪶 Quantity', value: `${fakeQty}`, inline: true },
+        { name: '💰 ETH Spent', value: `${fakeEth} ETH`, inline: true },
+        { name: '🆔 Token ID', value: `#${tokenId}`, inline: true }
       )
-      .setImage(fakeImage)
       .setColor(0x3498db)
-      .setFooter({ text: 'Simulation Mode • Not Real', iconURL: 'https://i.imgur.com/YOUR_ICON.png' })
+      .setImage('https://via.placeholder.com/400x400.png?text=NFT+Preview')
+      .setFooter({ text: 'Simulation Mode • Not Real' })
       .setTimestamp();
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setLabel('🔗 View on OpenSea')
         .setStyle(ButtonStyle.Link)
-        .setURL(`https://opensea.io/assets/base/${0xC38E2Ae060440c9269CcEB8C0EA8019a66Ce8927}/${fakeTokenId}`)
+        .setURL(`https://opensea.io/assets/base/0xYourContractAddress/${tokenId}`)
     );
 
-    const channel = await client.channels.fetch(channelId);
-    await channel.send({ embeds: [embed], components: [row] });
-    await message.reply(':point_up:');
+    try {
+      const channel = await client.channels.fetch(process.env.DISCORD_CHANNEL_ID);
+      await channel.send({ embeds: [embed], components: [row] });
+      await message.reply(':point_up: Embed sent!');
+    } catch (err) {
+      console.error('❌ Failed to send embed:', err);
+      await message.reply('⚠️ Failed to send message — check logs.');
+    }
   }
 });
-
-try {
-  const channel = await client.channels.fetch(channelId);
-  await channel.send({ embeds: [embed], components: [row] });
-} catch (err) {
-  console.error('❌ Failed to send embed:', err);
-}
 
 
 client.login(process.env.DISCORD_BOT_TOKEN);
