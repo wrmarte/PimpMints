@@ -18,7 +18,8 @@ const channelId = process.env.DISCORD_CHANNEL_ID;
 const mintPrice = 0.0069;
 
 const abi = [
-  "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)"
+  "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)",
+  "function tokenURI(uint256 tokenId) view returns (string)"
 ];
 const iface = new Interface(abi);
 const contract = new Contract(contractAddress, abi, provider);
