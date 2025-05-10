@@ -60,13 +60,15 @@ client.once('ready', async () => {
   });
 });
 
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
 client.on('messageCreate', async message => {
   if (message.content === '!testmint') {
     const fakeWallet = '0xDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF';
     const fakeQty = Math.floor(Math.random() * 5) + 1;
+    const fakeTokenId = Math.floor(Math.random() * 10000);
     const fakeEth = (fakeQty * mintPrice).toFixed(4);
+    const fakeImage = 'https://via.placeholder.com/400x400.png?text=NFT+Preview'; // Replace with real image if you have one
 
     const embed = new EmbedBuilder()
       .setTitle('🧪 Test Mint Triggered')
@@ -74,16 +76,24 @@ client.on('messageCreate', async message => {
       .addFields(
         { name: '📇 Wallet', value: `\`${fakeWallet}\``, inline: false },
         { name: '🪶 Quantity', value: `**${fakeQty}**`, inline: true },
-        { name: '💰 ETH Spent', value: `**${fakeEth} ETH**`, inline: true }
+        { name: '💰 ETH Spent', value: `**${fakeEth} ETH**`, inline: true },
+        { name: '🆔 Token ID', value: `#${fakeTokenId}`, inline: true }
       )
-      .setColor(0x1abc9c) // Aqua color — can be changed
+      .setImage(fakeImage)
+      .setColor(0x3498db)
       .setFooter({ text: 'Simulation Mode • Not Real', iconURL: 'https://i.imgur.com/YOUR_ICON.png' })
       .setTimestamp();
 
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setLabel('🔗 View on OpenSea')
+        .setStyle(ButtonStyle.Link)
+        .setURL(`https://opensea.io/assets/base/${0xC38E2Ae060440c9269CcEB8C0EA8019a66Ce8927}/${fakeTokenId}`)
+    );
+
     const channel = await client.channels.fetch(channelId);
-    await channel.send({ embeds: [embed] });
+    await channel.send({ embeds: [embed], components: [row] });
     await message.reply(':point_up:');
   }
 });
-
 client.login(process.env.DISCORD_BOT_TOKEN);
