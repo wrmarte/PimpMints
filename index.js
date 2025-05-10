@@ -51,12 +51,66 @@ client.once('ready', async () => {
       mints[to]++;
     }
 
-    for (const wallet in mints) {
-      const qty = mints[wallet];
-      const ethSpent = (qty * mintPrice).toFixed(4);
-      const msg = `>  ✳️ **__NEW CRYPTOPIMPS MINT ON BASE!__**\n >  📇 Wallet: \`${wallet}\`\n >  🪶 Quantity: **${qty}**\n >  💰 ETH Spent: **${ethSpent} ETH**\n  `;
-      await channel.send(msg);
+for (const log of logs) {
+  const parsed = iface.parseLog(log);
+  const to = parsed.args.to;
+  const from = parsed.args.from;
+  const tokenId = parsed.args.tokenId;
+
+  if (from !== ZeroAddress) continue;
+
+  // Try to get token URI
+  let tokenUri;
+  try {
+    tokenUri = await contract.tokenURI(tokenId);
+    if (tokenUri.startsWith('ipfs://')) {
+      tokenUri = tokenUri.replace('ipfs://', 'https://ipfs.io/ipfs/');
     }
+  } catch (err) {
+    console.warn(`⚠️ Could not get tokenURI for tokenId ${tokenId}:`, err);
+    continue;
+  }
+
+  // Fetch metadata
+  let imageUrl = 'https://via.placeholder.com/400x400.png?text=NFT';
+  try {
+    const metadata = await fetch(tokenUri).then(res => res.json());
+    if (metadata?.image) {
+      imageUrl = metadata.image.startsWith('ipfs://')
+        ? metadata.image.replace('ipfs://', 'https://ipfs.io/ipfs/')
+        : metadata.image;
+    }
+  } catch (err) {
+    console.warn(`⚠️ Could not fetch metadata for tokenId ${tokenId}:`, err);
+  }
+
+  const embed = new EmbedBuilder()
+    .setTitle('✨ NEW CRYPTOPIMPS MINT ON BASE!')
+    .setDescription('A new NFT has just been minted.')
+    .addFields(
+      { name: '📇 Wallet', value: `\`${to}\``, inline: false },
+      { name: '🆔 Token ID', value: `#${tokenId}`, inline: true },
+      { name: '💰 ETH Spent', value: `${mintPrice} ETH`, inline: true }
+    )
+    .setImage(imageUrl)
+    .setColor(0x0099ff)
+    .setFooter({ text: 'Mint detected live on Base' })
+    .setTimestamp();
+
+  const row = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setLabel('🔗 View on OpenSea')
+      .setStyle(ButtonStyle.Link)
+      .setURL(`https://opensea.io/assets/base/${contractAddress}/${tokenId}`)
+  );
+
+  try {
+    await channel.send({ embeds: [embed], components: [row] });
+  } catch (err) {
+    console.error('❌ Failed to send embed:', err);
+  }
+}
+
 
     lastBlockChecked = blockNumber;
   });
@@ -65,12 +119,12 @@ client.once('ready', async () => {
 client.on('messageCreate', async message => {
   if (message.content === '!testmint') {
     const fakeWallet = '0xDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF';
-    const fakeQty = 2;
+    const fakeQty = 1;
     const fakeEth = (fakeQty * 0.0069).toFixed(4);
-    const tokenId = 1234;
+    const tokenId = 1200;
 
     const embed = new EmbedBuilder()
-      .setTitle('🧪 Test Mint Triggered')
+      .setTitle('🧪 **__Test Mint Triggered__**')
       .setDescription('Simulated mint on Base network.')
       .addFields(
         { name: '📇 Wallet', value: `\`${fakeWallet}\`` },
