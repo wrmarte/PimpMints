@@ -94,7 +94,7 @@ for (const log of logs) {
       { name: '💰 ETH Spent', value: `${mintPrice} ETH`, inline: true }
     )
     .setImage(imageUrl)
-    .setColor(0x0099ff)
+    .setColor(219139)
     .setFooter({ text: 'Mint detected live on Base' })
     .setTimestamp();
 
