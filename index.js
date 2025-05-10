@@ -133,7 +133,7 @@ client.on('messageCreate', async message => {
         { name: '💰 ETH Spent', value: `${fakeEth} ETH`, inline: true },
         { name: '🆔 Token ID', value: `#${tokenId}`, inline: true }
       )
-      .setColor(0x3498db)
+      .setColor(219139)
       .setImage('https://via.placeholder.com/400x400.png?text=NFT+Preview')
       .setFooter({ text: 'Simulation Mode • Not Real' })
       .setTimestamp();
