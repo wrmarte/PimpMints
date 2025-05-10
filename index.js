@@ -85,19 +85,29 @@ for (const log of logs) {
     console.warn(`⚠️ Could not fetch metadata for tokenId ${tokenId}:`, err);
   }
 
-  const embed = new EmbedBuilder()
-    .setTitle('✨ NEW CRYPTOPIMPS MINT ON BASE!')
-    .setDescription('A new NFT has just been minted.')
-    .addFields(
-      { name: '📇 Wallet', value: `\`${to}\``, inline: false },
-      { name: '🆔 Token ID', value: `#${tokenId}`, inline: true },
-      { name: '💰 ETH Spent', value: `${mintPrice} ETH`, inline: true }
-    )
-    .setImage(imageUrl)
-    .setColor(219139)
-    .setFooter({ text: 'Mint detected live on Base' })
-    .setTimestamp();
+// ENS lookup
+let displayName;
+try {
+  const ens = await provider.lookupAddress(to);
+  displayName = ens || to;
+} catch (err) {
+  console.warn(`⚠️ Could not resolve ENS for ${to}:`, err);
+  displayName = to;
+}
 
+// Build embed
+const embed = new EmbedBuilder()
+  .setTitle('✨ NEW CRYPTOPIMPS MINT ON BASE!')
+  .setDescription('A new NFT has just been minted.')
+  .addFields(
+    { name: '📇 Wallet', value: `\`${displayName}\``, inline: false },
+    { name: '🆔 Token ID', value: `#${tokenId}`, inline: true },
+    { name: '💰 ETH Spent', value: `${mintPrice} ETH`, inline: true }
+  )
+  .setImage(imageUrl)
+  .setColor(219139)
+  .setFooter({ text: 'Mint detected live on Base' })
+  .setTimestamp();
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setLabel('🔗 View on OpenSea')
