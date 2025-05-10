@@ -60,17 +60,29 @@ client.once('ready', async () => {
   });
 });
 
+const { EmbedBuilder } = require('discord.js');
+
 client.on('messageCreate', async message => {
   if (message.content === '!testmint') {
     const fakeWallet = '0xDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF';
     const fakeQty = Math.floor(Math.random() * 5) + 1;
     const fakeEth = (fakeQty * mintPrice).toFixed(4);
-    const testMsg = `>  🧪 **__TEST MINT TRIGGED (Base Sim)__**\n >  📇 Wallet: \`${fakeWallet}\`\n >  🪶 Quantity: **${fakeQty}**\n >  💰 ETH Spent: **${fakeEth} ETH**\n  `;
+
+    const embed = new EmbedBuilder()
+      .setTitle('🧪 Test Mint Triggered')
+      .setDescription('Simulated mint event on Base network')
+      .addFields(
+        { name: '📇 Wallet', value: `\`${fakeWallet}\``, inline: false },
+        { name: '🪶 Quantity', value: `**${fakeQty}**`, inline: true },
+        { name: '💰 ETH Spent', value: `**${fakeEth} ETH**`, inline: true }
+      )
+      .setColor(0x1abc9c) // Aqua color — can be changed
+      .setFooter({ text: 'Simulation Mode • Not Real', iconURL: 'https://i.imgur.com/YOUR_ICON.png' })
+      .setTimestamp();
 
     const channel = await client.channels.fetch(channelId);
-    await channel.send(testMsg);
+    await channel.send({ embeds: [embed] });
     await message.reply(':point_up:');
-
   }
 });
 
