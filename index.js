@@ -85,29 +85,19 @@ for (const log of logs) {
     console.warn(`⚠️ Could not fetch metadata for tokenId ${tokenId}:`, err);
   }
 
-// ENS lookup
-let displayName;
-try {
-  const ens = await provider.lookupAddress(to);
-  displayName = ens || to;
-} catch (err) {
-  console.warn(`⚠️ Could not resolve ENS for ${to}:`, err);
-  displayName = to;
-}
+  const embed = new EmbedBuilder()
+    .setTitle('✨ NEW CRYPTOPIMPS MINT ON BASE!')
+    .setDescription('A new NFT has just been minted.')
+    .addFields(
+      { name: '📇 Wallet', value: `\`${to}\``, inline: false },
+      { name: '🆔 Token ID', value: `#${tokenId}`, inline: true },
+      { name: '💰 ETH Spent', value: `${mintPrice} ETH`, inline: true }
+    )
+    .setImage(imageUrl)
+    .setColor(219139)
+    .setFooter({ text: 'Mint detected live on Base' })
+    .setTimestamp();
 
-// Build embed
-const embed = new EmbedBuilder()
-  .setTitle('✨ NEW CRYPTOPIMPS MINT ON BASE!')
-  .setDescription('A new NFT has just been minted.')
-  .addFields(
-    { name: '📇 Wallet', value: `\`${displayName}\``, inline: false },
-    { name: '🆔 Token ID', value: `#${tokenId}`, inline: true },
-    { name: '💰 ETH Spent', value: `${mintPrice} ETH`, inline: true }
-  )
-  .setImage(imageUrl)
-  .setColor(219139)
-  .setFooter({ text: 'Mint detected live on Base' })
-  .setTimestamp();
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setLabel('🔗 View on OpenSea')
@@ -126,45 +116,3 @@ const embed = new EmbedBuilder()
     lastBlockChecked = blockNumber;
   });
 });
-
-client.on('messageCreate', async message => {
-  if (message.content === '!testmint') {
-    const fakeWallet = '0xDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF';
-    const fakeQty = 1;
-    const fakeEth = (fakeQty * 0.0069).toFixed(4);
-    const tokenId = 1200;
-
-    const embed = new EmbedBuilder()
-      .setTitle('🧪 **__Test Mint Triggered__**')
-      .setDescription('Simulated mint on Base network.')
-      .addFields(
-        { name: '📇 Wallet', value: `\`${fakeWallet}\`` },
-        { name: '🪶 Quantity', value: `${fakeQty}`, inline: true },
-        { name: '💰 ETH Spent', value: `${fakeEth} ETH`, inline: true },
-        { name: '🆔 Token ID', value: `#${tokenId}`, inline: true }
-      )
-      .setColor(219139)
-      .setImage('https://via.placeholder.com/400x400.png?text=NFT+Preview')
-      .setFooter({ text: 'Simulation Mode • Not Real' })
-      .setTimestamp();
-
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setLabel('🔗 View on OpenSea')
-        .setStyle(ButtonStyle.Link)
-        .setURL(`https://opensea.io/assets/base/0xC38E2Ae060440c9269CcEB8C0EA8019a66Ce8927/${tokenId}`)
-    );
-
-    try {
-      const channel = await client.channels.fetch(process.env.DISCORD_CHANNEL_ID);
-      await channel.send({ embeds: [embed], components: [row] });
-      await message.reply(':point_up: Embed sent!');
-    } catch (err) {
-      console.error('❌ Failed to send embed:', err);
-      await message.reply('⚠️ Failed to send message — check logs.');
-    }
-  }
-});
-
-
-client.login(process.env.DISCORD_BOT_TOKEN);
