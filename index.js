@@ -116,3 +116,44 @@ for (const log of logs) {
     lastBlockChecked = blockNumber;
   });
 });
+client.on('messageCreate', async message => {
+  if (message.content === '!mintest') {
+    const fakeWallet = '0xDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF';
+    const fakeQty = 2;
+    const fakeEth = (fakeQty * 0.0069).toFixed(4);
+    const tokenId = 1210;
+
+    const embed = new EmbedBuilder()
+      .setTitle('🧪 Test Mint Triggered')
+      .setDescription('Simulated mint on Base network.')
+      .addFields(
+        { name: '📇 Wallet', value: `\`${fakeWallet}\`` },
+        { name: '🪶 Quantity', value: `${fakeQty}`, inline: true },
+        { name: '💰 ETH Spent', value: `${fakeEth} ETH`, inline: true },
+        { name: '🆔 Token ID', value: `#${tokenId}`, inline: true }
+      )
+      .setColor(0x3498db)
+      .setImage('https://via.placeholder.com/400x400.png?text=NFT+Preview')
+      .setFooter({ text: 'Simulation Mode • Not Real' })
+      .setTimestamp();
+
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setLabel('🔗 View on OpenSea')
+        .setStyle(ButtonStyle.Link)
+        .setURL(`https://opensea.io/assets/base/${contractAddress}/${tokenId}`)
+    );
+
+    try {
+      const channel = await client.channels.fetch(process.env.DISCORD_CHANNEL_ID);
+      await channel.send({ embeds: [embed], components: [row] });
+      await message.reply(':point_up: Embed sent!');
+    } catch (err) {
+      console.error('❌ Failed to send embed:', err);
+      await message.reply('⚠️ Failed to send message — check logs.');
+    }
+  }
+});
+
+
+client.login(process.env.DISCORD_BOT_TOKEN);
