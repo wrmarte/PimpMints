@@ -1,7 +1,7 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { JsonRpcProvider, Contract, ZeroAddress, id, Interface } = require('ethers');
-const fetch = require('node-fetch'); // Use only if not using native fetch()
+const fetch = require('node-fetch');
 
 const client = new Client({
   intents: [
@@ -13,7 +13,8 @@ const client = new Client({
 
 const provider = new JsonRpcProvider(process.env.RPC_URL);
 const contractAddress = process.env.CONTRACT_ADDRESS;
-const channelId = process.env.DISCORD_CHANNEL_ID;
+const primaryChannelId = process.env.DISCORD_CHANNEL_ID;
+const extraChannelId = '1322616358944637031'; // Additional channel
 const mintPrice = 0.0069;
 
 const abi = [
@@ -26,11 +27,11 @@ const contract = new Contract(contractAddress, abi, provider);
 
 let lastBlockChecked = 0;
 
-// --- On Ready ---
 client.once('ready', async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
   lastBlockChecked = await provider.getBlockNumber();
-  const channel = await client.channels.fetch(channelId);
+  const mainChannel = await client.channels.fetch(primaryChannelId);
+  const altChannel = await client.channels.fetch(extraChannelId);
 
   provider.on('block', async (blockNumber) => {
     const logs = await provider.getLogs({
@@ -89,7 +90,8 @@ client.once('ready', async () => {
       );
 
       try {
-        await channel.send({ embeds: [embed], components: [row] });
+        await mainChannel.send({ embeds: [embed], components: [row] });
+        await altChannel.send({ embeds: [embed], components: [row] });
       } catch (err) {
         console.error('❌ Failed to send embed:', err);
       }
@@ -99,7 +101,6 @@ client.once('ready', async () => {
   });
 });
 
-// --- !mintest Command ---
 client.on('messageCreate', async message => {
   if (message.content === '!mintest') {
     const fakeWallet = '0xDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF';
@@ -139,5 +140,3 @@ client.on('messageCreate', async message => {
 });
 
 client.login(process.env.DISCORD_BOT_TOKEN);
-
-
