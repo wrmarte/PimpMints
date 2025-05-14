@@ -1,15 +1,14 @@
-// enhanced-mint-bot.js
 require('dotenv').config();
 const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { JsonRpcProvider, Contract, ZeroAddress, id, Interface } = require('ethers');
-const fetch = require('node-fetch');
+const fetch = require('node-fetch'); // Use only if not using native fetch()
 
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent
-  ]
+    GatewayIntentBits.MessageContent,
+  ],
 });
 
 const provider = new JsonRpcProvider(process.env.RPC_URL);
@@ -24,8 +23,10 @@ const abi = [
 
 const iface = new Interface(abi);
 const contract = new Contract(contractAddress, abi, provider);
+
 let lastBlockChecked = 0;
 
+// --- On Ready ---
 client.once('ready', async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
   lastBlockChecked = await provider.getBlockNumber();
@@ -42,7 +43,6 @@ client.once('ready', async () => {
     for (const log of logs) {
       const parsed = iface.parseLog(log);
       const { from, to, tokenId } = parsed.args;
-
       if (from !== ZeroAddress) continue;
 
       let tokenUri;
@@ -52,7 +52,7 @@ client.once('ready', async () => {
           tokenUri = tokenUri.replace('ipfs://', 'https://ipfs.io/ipfs/');
         }
       } catch (err) {
-        console.warn(`⚠️ tokenURI fail for token ${tokenId}:`, err);
+        console.warn(`⚠️ Could not get tokenURI for tokenId ${tokenId}:`, err);
         continue;
       }
 
@@ -65,7 +65,7 @@ client.once('ready', async () => {
             : metadata.image;
         }
       } catch (err) {
-        console.warn(`⚠️ metadata fetch fail for token ${tokenId}:`, err);
+        console.warn(`⚠️ Could not fetch metadata for tokenId ${tokenId}:`, err);
       }
 
       const embed = new EmbedBuilder()
@@ -77,7 +77,7 @@ client.once('ready', async () => {
           { name: '💰 ETH Spent', value: `${mintPrice} ETH`, inline: true }
         )
         .setImage(imageUrl)
-        .setColor(0xD62C2C)
+        .setColor(219139)
         .setFooter({ text: 'Mint detected live on Base' })
         .setTimestamp();
 
@@ -94,24 +94,30 @@ client.once('ready', async () => {
         console.error('❌ Failed to send embed:', err);
       }
     }
+
     lastBlockChecked = blockNumber;
   });
 });
 
+// --- !mintest Command ---
 client.on('messageCreate', async message => {
   if (message.content === '!mintest') {
+    const fakeWallet = '0xDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF';
+    const fakeQty = 2;
+    const fakeEth = (fakeQty * mintPrice).toFixed(4);
     const tokenId = 1210;
+
     const embed = new EmbedBuilder()
       .setTitle('🧪 Test Mint Triggered')
       .setDescription('Simulated mint on Base network.')
       .addFields(
-        { name: '📇 Wallet', value: '`0xDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF`' },
-        { name: '🪶 Quantity', value: '2', inline: true },
-        { name: '💰 ETH Spent', value: `${(2 * mintPrice).toFixed(4)} ETH`, inline: true },
+        { name: '📇 Wallet', value: `\`${fakeWallet}\`` },
+        { name: '🪶 Quantity', value: `${fakeQty}`, inline: true },
+        { name: '💰 ETH Spent', value: `${fakeEth} ETH`, inline: true },
         { name: '🆔 Token ID', value: `#${tokenId}`, inline: true }
       )
       .setColor(0x3498db)
-      .setImage('https://via.placeholder.com/300x300.png?text=Mint+Test')
+      .setImage('https://via.placeholder.com/400x400.png?text=NFT+Preview')
       .setFooter({ text: 'Simulation Mode • Not Real' })
       .setTimestamp();
 
@@ -123,15 +129,15 @@ client.on('messageCreate', async message => {
     );
 
     try {
-      const channel = await client.channels.fetch(channelId);
-      await channel.send({ embeds: [embed], components: [row] });
-      await message.reply(':point_up: Test embed sent.');
+      await message.channel.send({ embeds: [embed], components: [row] });
+      await message.reply(':point_up: Embed sent in this channel!');
     } catch (err) {
-      console.error('❌ Failed to send test embed:', err);
-      await message.reply('⚠️ Failed to send test embed.');
+      console.error('❌ Failed to send embed:', err);
+      await message.reply('⚠️ Failed to send message — check logs.');
     }
   }
 });
 
 client.login(process.env.DISCORD_BOT_TOKEN);
+
 
