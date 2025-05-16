@@ -99,18 +99,20 @@ client.once('ready', async () => {
     }
 
     if (mints.length > 0) {
-      const embeds = mints.map((mint, index) => new EmbedBuilder()
-        .setTitle(`✨ NEW CRYPTOPIMP MINT #${mint.tokenId}`)
-        .setDescription(`Minted by: \`${mint.to}\``)
+      const tokenIds = mints.map(m => `#${m.tokenId}`).join(', ');
+
+      const embed = new EmbedBuilder()
+        .setTitle('✨ NEW CRYPTOPIMPS MINTS ON BASE!')
+        .setDescription(`Minted by: \`${mints[0].to}\``)
         .addFields(
-          { name: '🆔 Token ID', value: `#${mint.tokenId}`, inline: true },
-          { name: '💰 ETH Spent', value: `${mintPrice.toFixed(4)} ETH`, inline: true }
+          { name: '🆔 Token IDs', value: tokenIds, inline: false },
+          { name: '💰 ETH Spent', value: `${(mintPrice * mints.length).toFixed(4)} ETH`, inline: true },
+          { name: '🔢 Total Minted', value: `${mints.length}`, inline: true }
         )
-        .setImage(mint.imageUrl)
+        .setThumbnail(mints[0].imageUrl)
         .setColor(219139)
-        .setFooter({ text: `Mint ${index + 1} of ${mints.length}` })
-        .setTimestamp()
-      );
+        .setFooter({ text: 'Mint(s) detected live on Base' })
+        .setTimestamp();
 
       const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
@@ -120,10 +122,10 @@ client.once('ready', async () => {
       );
 
       try {
-        await mainChannel.send({ embeds: embeds, components: [row] });
-        await altChannel.send({ embeds: embeds, components: [row] });
+        await mainChannel.send({ embeds: [embed], components: [row] });
+        await altChannel.send({ embeds: [embed], components: [row] });
       } catch (err) {
-        console.error('❌ Failed to send embeds:', err);
+        console.error('❌ Failed to send embed:', err);
       }
     }
 
@@ -137,18 +139,18 @@ client.on('messageCreate', async message => {
     const tokenIds = [1210, 1211, 1212];
     const fakeQty = tokenIds.length;
 
-    const embeds = tokenIds.map((id, index) => new EmbedBuilder()
-      .setTitle(`🧪 Simulated Mint #${id}`)
+    const embed = new EmbedBuilder()
+      .setTitle('🧪 Simulated Mint')
       .setDescription(`Simulated mint by: \`${fakeWallet}\``)
       .addFields(
-        { name: '🆔 Token ID', value: `#${id}`, inline: true },
-        { name: '💰 ETH Spent', value: `${mintPrice.toFixed(4)} ETH`, inline: true }
+        { name: '🆔 Token IDs', value: tokenIds.map(id => `#${id}`).join(', '), inline: false },
+        { name: '💰 ETH Spent', value: `${(mintPrice * fakeQty).toFixed(4)} ETH`, inline: true },
+        { name: '🔢 Total Minted', value: `${fakeQty}`, inline: true }
       )
-      .setImage('https://via.placeholder.com/400x400.png?text=NFT+Preview')
+      .setThumbnail('https://via.placeholder.com/400x400.png?text=NFT+Preview')
       .setColor(0x3498db)
-      .setFooter({ text: `Simulation ${index + 1} of ${tokenIds.length}` })
-      .setTimestamp()
-    );
+      .setFooter({ text: 'Simulation Mode • Not Real' })
+      .setTimestamp();
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
@@ -158,8 +160,8 @@ client.on('messageCreate', async message => {
     );
 
     try {
-      await message.channel.send({ embeds: embeds, components: [row] });
-      await message.reply(':point_up: Simulated embeds sent together!');
+      await message.channel.send({ embeds: [embed], components: [row] });
+      await message.reply(':point_up: Simulated embed sent!');
     } catch (err) {
       console.error('❌ Failed to send embed:', err);
       await message.reply('⚠️ Failed to send message — check logs.');
@@ -167,5 +169,4 @@ client.on('messageCreate', async message => {
   }
 });
 
-client.login(process.env.DISCORD_BOT_TOKEN);
-
+client.login(process.env.DISCORD_BOT_TO
