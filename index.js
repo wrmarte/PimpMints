@@ -169,4 +169,4 @@ client.on('messageCreate', async message => {
   }
 });
 
-client.login(process.env.DISCORD_BOT_TO
+client.login(process.env.DISCORD_BOT_TOKEN);
