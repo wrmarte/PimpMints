@@ -66,6 +66,7 @@ client.once('ready', async () => {
       topics: [id("Transfer(address,address,uint256)")]
     });
 
+    const mints = [];
     for (const log of logs) {
       const parsed = iface.parseLog(log);
       const { from, to, tokenId } = parsed.args;
@@ -94,31 +95,35 @@ client.once('ready', async () => {
         console.warn(`⚠️ Could not fetch metadata for tokenId ${tokenId}:`, err);
       }
 
-      const embed = new EmbedBuilder()
-        .setTitle('✨ NEW CRYPTOPIMPS MINT ON BASE!')
-        .setDescription('A new NFT has just been minted.')
+      mints.push({ to, tokenId, imageUrl });
+    }
+
+    if (mints.length > 0) {
+      const embeds = mints.map((mint, index) => new EmbedBuilder()
+        .setTitle(`✨ NEW CRYPTOPIMP MINT #${mint.tokenId}`)
+        .setDescription(`Minted by: \\`${mint.to}\``)
         .addFields(
-          { name: '📇 Wallet', value: `\`${to}\``, inline: false },
-          { name: '🆔 Token ID', value: `#${tokenId}`, inline: true },
-          { name: '💰 ETH Spent', value: `${mintPrice} ETH`, inline: true }
+          { name: '🆔 Token ID', value: `#${mint.tokenId}`, inline: true },
+          { name: '💰 ETH Spent', value: `${mintPrice.toFixed(4)} ETH`, inline: true }
         )
-        .setImage(imageUrl)
+        .setImage(mint.imageUrl)
         .setColor(219139)
-        .setFooter({ text: 'Mint detected live on Base' })
-        .setTimestamp();
+        .setFooter({ text: `Mint ${index + 1} of ${mints.length}` })
+        .setTimestamp()
+      );
 
       const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
-          .setLabel('🔗 View on OpenSea')
+          .setLabel('🔗 View Collection on OpenSea')
           .setStyle(ButtonStyle.Link)
-          .setURL(`https://opensea.io/assets/base/${contractAddress}/${tokenId}`)
+          .setURL(`https://opensea.io/assets/base/${contractAddress}`)
       );
 
       try {
-        await mainChannel.send({ embeds: [embed], components: [row] });
-        await altChannel.send({ embeds: [embed], components: [row] });
+        await mainChannel.send({ embeds: embeds, components: [row] });
+        await altChannel.send({ embeds: embeds, components: [row] });
       } catch (err) {
-        console.error('❌ Failed to send embed:', err);
+        console.error('❌ Failed to send embeds:', err);
       }
     }
 
@@ -129,34 +134,32 @@ client.once('ready', async () => {
 client.on('messageCreate', async message => {
   if (message.content === '!mintest') {
     const fakeWallet = '0xDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF';
-    const fakeQty = 2;
-    const fakeEth = (fakeQty * mintPrice).toFixed(4);
-    const tokenId = 1210;
+    const tokenIds = [1210, 1211, 1212];
+    const fakeQty = tokenIds.length;
 
-    const embed = new EmbedBuilder()
-      .setTitle('🧪 Test Mint Triggered')
-      .setDescription('Simulated mint on Base network.')
+    const embeds = tokenIds.map((id, index) => new EmbedBuilder()
+      .setTitle(`🧪 Simulated Mint #${id}`)
+      .setDescription(`Simulated mint by: \\`${fakeWallet}\``)
       .addFields(
-        { name: '📇 Wallet', value: `\`${fakeWallet}\`` },
-        { name: '🪶 Quantity', value: `${fakeQty}`, inline: true },
-        { name: '💰 ETH Spent', value: `${fakeEth} ETH`, inline: true },
-        { name: '🆔 Token ID', value: `#${tokenId}`, inline: true }
+        { name: '🆔 Token ID', value: `#${id}`, inline: true },
+        { name: '💰 ETH Spent', value: `${mintPrice.toFixed(4)} ETH`, inline: true }
       )
-      .setColor(0x3498db)
       .setImage('https://via.placeholder.com/400x400.png?text=NFT+Preview')
-      .setFooter({ text: 'Simulation Mode • Not Real' })
-      .setTimestamp();
+      .setColor(0x3498db)
+      .setFooter({ text: `Simulation ${index + 1} of ${tokenIds.length}` })
+      .setTimestamp()
+    );
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
-        .setLabel('🔗 View on OpenSea')
+        .setLabel('🔗 View Collection on OpenSea')
         .setStyle(ButtonStyle.Link)
-        .setURL(`https://opensea.io/assets/base/${contractAddress}/${tokenId}`)
+        .setURL(`https://opensea.io/assets/base/${contractAddress}`)
     );
 
     try {
-      await message.channel.send({ embeds: [embed], components: [row] });
-      await message.reply(':point_up: Embed sent in this channel!');
+      await message.channel.send({ embeds: embeds, components: [row] });
+      await message.reply(':point_up: Simulated embeds sent together!');
     } catch (err) {
       console.error('❌ Failed to send embed:', err);
       await message.reply('⚠️ Failed to send message — check logs.');
