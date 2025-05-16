@@ -101,7 +101,7 @@ client.once('ready', async () => {
     if (mints.length > 0) {
       const embeds = mints.map((mint, index) => new EmbedBuilder()
         .setTitle(`✨ NEW CRYPTOPIMP MINT #${mint.tokenId}`)
-        .setDescription(`Minted by: \\`${mint.to}\``)
+        .setDescription(`Minted by: \`${mint.to}\``)
         .addFields(
           { name: '🆔 Token ID', value: `#${mint.tokenId}`, inline: true },
           { name: '💰 ETH Spent', value: `${mintPrice.toFixed(4)} ETH`, inline: true }
@@ -139,7 +139,7 @@ client.on('messageCreate', async message => {
 
     const embeds = tokenIds.map((id, index) => new EmbedBuilder()
       .setTitle(`🧪 Simulated Mint #${id}`)
-      .setDescription(`Simulated mint by: \\`${fakeWallet}\``)
+      .setDescription(`Simulated mint by: \`${fakeWallet}\``)
       .addFields(
         { name: '🆔 Token ID', value: `#${id}`, inline: true },
         { name: '💰 ETH Spent', value: `${mintPrice.toFixed(4)} ETH`, inline: true }
