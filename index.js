@@ -55,8 +55,11 @@ client.once('ready', async () => {
   contract.connect(provider);
   lastBlockChecked = await provider.getBlockNumber();
 
-  const mainChannel = await client.channels.fetch(primaryChannelId);
-  const altChannel = await client.channels.fetch(extraChannelId);
+  const mainChannel = await client.channels.fetch(primaryChannelId).catch(() => null);
+  const altChannel = await client.channels.fetch(extraChannelId).catch(() => null);
+
+  if (!mainChannel) console.warn('⚠️ Could not fetch mainChannel');
+  if (!altChannel) console.warn('⚠️ Could not fetch altChannel');
 
   provider.on('block', async (blockNumber) => {
     const logs = await provider.getLogs({
@@ -122,8 +125,15 @@ client.once('ready', async () => {
       );
 
       try {
-        await mainChannel.send({ embeds: [embed], components: [row] });
-        await altChannel.send({ embeds: [embed], components: [row] });
+        const sentIds = new Set();
+        if (mainChannel && !sentIds.has(mainChannel.id)) {
+          await mainChannel.send({ embeds: [embed], components: [row] });
+          sentIds.add(mainChannel.id);
+        }
+        if (altChannel && !sentIds.has(altChannel.id)) {
+          await altChannel.send({ embeds: [embed], components: [row] });
+          sentIds.add(altChannel.id);
+        }
       } catch (err) {
         console.error('❌ Failed to send embed:', err);
       }
@@ -170,3 +180,4 @@ client.on('messageCreate', async message => {
 });
 
 client.login(process.env.DISCORD_BOT_TOKEN);
+
