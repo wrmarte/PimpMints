@@ -117,11 +117,15 @@ client.once('ready', async () => {
         .setFooter({ text: 'Mint(s) detected live on Base' })
         .setTimestamp();
 
+      const buttonUrl = mints.length === 1
+        ? `https://opensea.io/assets/base/${contractAddress}/${mints[0].tokenId}`
+        : `https://opensea.io/assets/base/${contractAddress}`;
+
       const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
-          .setLabel('🔗 View Collection on OpenSea')
+          .setLabel('🔗 View on OpenSea')
           .setStyle(ButtonStyle.Link)
-          .setURL(`https://opensea.io/assets/base/${contractAddress}`)
+          .setURL(buttonUrl)
       );
 
       try {
@@ -162,11 +166,15 @@ client.on('messageCreate', async message => {
       .setFooter({ text: 'Simulation Mode • Not Real' })
       .setTimestamp();
 
+    const buttonUrl = tokenIds.length === 1
+      ? `https://opensea.io/assets/base/${contractAddress}/${tokenIds[0]}`
+      : `https://opensea.io/assets/base/${contractAddress}`;
+
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
-        .setLabel('🔗 View Collection on OpenSea')
+        .setLabel('🔗 View on OpenSea')
         .setStyle(ButtonStyle.Link)
-        .setURL(`https://opensea.io/assets/base/${contractAddress}`)
+        .setURL(buttonUrl)
     );
 
     try {
