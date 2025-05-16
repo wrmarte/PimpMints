@@ -129,14 +129,12 @@ client.once('ready', async () => {
       );
 
       try {
-        const sentIds = new Set();
-        if (mainChannel && !sentIds.has(mainChannel.id)) {
-          await mainChannel.send({ embeds: [embed], components: [row] });
-          sentIds.add(mainChannel.id);
-        }
-        if (altChannel && !sentIds.has(altChannel.id)) {
-          await altChannel.send({ embeds: [embed], components: [row] });
-          sentIds.add(altChannel.id);
+        const channelsToNotify = [mainChannel, altChannel]
+          .filter(c => c && c.id)
+          .reduce((map, c) => map.set(c.id, c), new Map());
+
+        for (const [, channel] of channelsToNotify) {
+          await channel.send({ embeds: [embed], components: [row] });
         }
       } catch (err) {
         console.error('❌ Failed to send embed:', err);
