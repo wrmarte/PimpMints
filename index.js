@@ -11,10 +11,32 @@ const client = new Client({
   ],
 });
 
-const provider = new JsonRpcProvider(process.env.RPC_URL);
+// --- Multiple RPC Fallback Logic ---
+const rpcUrls = [
+  'https://mainnet.base.org',
+  'https://developer-access-mainnet.base.org',
+  'https://base.blockpi.network/v1/rpc/public'
+];
+
+let provider;
+(async () => {
+  for (const url of rpcUrls) {
+    try {
+      const tempProvider = new JsonRpcProvider(url);
+      await tempProvider.getBlockNumber();
+      provider = tempProvider;
+      console.log(`✅ Connected to RPC: ${url}`);
+      break;
+    } catch (err) {
+      console.warn(`⚠️ Failed to connect to RPC: ${url}`);
+    }
+  }
+  if (!provider) throw new Error('❌ All RPC endpoints failed to connect');
+})();
+
 const contractAddress = process.env.CONTRACT_ADDRESS;
 const primaryChannelId = process.env.DISCORD_CHANNEL_ID;
-const extraChannelId = '1322616358944637031'; // Additional channel
+const extraChannelId = '1322616358944637031';
 const mintPrice = 0.0069;
 
 const abi = [
@@ -23,13 +45,16 @@ const abi = [
 ];
 
 const iface = new Interface(abi);
-const contract = new Contract(contractAddress, abi, provider);
-
+const contract = new Contract(contractAddress, abi);
 let lastBlockChecked = 0;
 
 client.once('ready', async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
+
+  while (!provider) await new Promise(res => setTimeout(res, 500));
+  contract.connect(provider);
   lastBlockChecked = await provider.getBlockNumber();
+
   const mainChannel = await client.channels.fetch(primaryChannelId);
   const altChannel = await client.channels.fetch(extraChannelId);
 
@@ -48,7 +73,7 @@ client.once('ready', async () => {
 
       let tokenUri;
       try {
-        tokenUri = await contract.tokenURI(tokenId);
+        tokenUri = await contract.connect(provider).tokenURI(tokenId);
         if (tokenUri.startsWith('ipfs://')) {
           tokenUri = tokenUri.replace('ipfs://', 'https://ipfs.io/ipfs/');
         }
@@ -140,3 +165,4 @@ client.on('messageCreate', async message => {
 });
 
 client.login(process.env.DISCORD_BOT_TOKEN);
+
