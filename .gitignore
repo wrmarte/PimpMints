@@ -1,6 +1,29 @@
 node index.js
 
- 
+ # ✅ Node modules and build artifacts
+node_modules/
+dist/
+build/
+
+# ✅ Environment variables
+.env
+
+# ✅ Runtime state tracking files
+lastBlock.json
+seen.json
+
+# ✅ Logs and debug files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ✅ OS / editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
 
 /app/node_modules/discord.js/src/client/websocket/WebSocketManager.js:139
 
