@@ -1,3 +1,4 @@
+// ✅ FINAL FIXED MINT BOT (WITH BUFFER_OVERRUN & MEMORY PATCHES)
 require('dotenv').config();
 const {
   Client,
@@ -10,16 +11,14 @@ const {
 const { JsonRpcProvider, Contract, ZeroAddress, id, Interface } = require('ethers');
 const fetch = require('node-fetch');
 
-// --- Discord Setup ---
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-  ],
+    GatewayIntentBits.MessageContent
+  ]
 });
 
-// --- Multi-RPC Fallback ---
 const rpcUrls = [
   'https://mainnet.base.org',
   'https://developer-access-mainnet.base.org',
@@ -59,7 +58,6 @@ const extraChannelId = '1322616358944637031';
 const mintPrice = 0.0069;
 let lastBlockChecked = 0;
 
-// --- Bot Online ---
 client.once('ready', async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
 
@@ -75,16 +73,26 @@ client.once('ready', async () => {
 
   provider.on('block', async (blockNumber) => {
     try {
+      const toBlock = Math.min(lastBlockChecked + 10, blockNumber);
+
       const logs = await provider.getLogs({
         fromBlock: lastBlockChecked + 1,
-        toBlock: blockNumber,
+        toBlock,
         address: contract.address,
         topics: [id("Transfer(address,address,uint256)")]
       });
 
       const mints = [];
+
       for (const log of logs) {
-        const parsed = iface.parseLog(log);
+        let parsed;
+        try {
+          parsed = iface.parseLog(log);
+        } catch (err) {
+          console.warn(`⚠️ Could not parse log: ${err.message}`);
+          continue;
+        }
+
         const { from, to, tokenId } = parsed.args;
         if (from !== ZeroAddress) continue;
 
@@ -101,11 +109,14 @@ client.once('ready', async () => {
 
         let imageUrl = 'https://via.placeholder.com/400x400.png?text=NFT';
         try {
-          const metadata = await fetch(tokenUri).then(res => res.json());
-          if (metadata?.image) {
-            imageUrl = metadata.image.startsWith('ipfs://')
-              ? metadata.image.replace('ipfs://', 'https://ipfs.io/ipfs/')
-              : metadata.image;
+          const res = await fetch(tokenUri);
+          if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
+            const metadata = await res.json();
+            if (metadata?.image) {
+              imageUrl = metadata.image.startsWith('ipfs://')
+                ? metadata.image.replace('ipfs://', 'https://ipfs.io/ipfs/')
+                : metadata.image;
+            }
           }
         } catch (err) {
           console.warn(`⚠️ Could not fetch metadata for tokenId ${tokenId}:`, err);
@@ -147,48 +158,13 @@ client.once('ready', async () => {
         }
       }
 
-      lastBlockChecked = blockNumber;
+      lastBlockChecked = toBlock;
     } catch (err) {
       console.error('❌ Block processing error:', err);
     }
   });
 });
 
-// --- Manual test command ---
-client.on('messageCreate', async message => {
-  if (message.content === '!mintest') {
-    const fakeWallet = '0xDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF';
-    const tokenIds = [1210, 1211, 1212];
-    const fakeQty = tokenIds.length;
-
-    const embed = new EmbedBuilder()
-      .setTitle('🧪 Simulated Mint')
-      .setDescription(`Simulated mint by: \`${fakeWallet}\``)
-      .addFields(
-        { name: '🆔 Token IDs', value: tokenIds.map(id => `#${id}`).join(', '), inline: false },
-        { name: '💰 ETH Spent', value: `${(mintPrice * fakeQty).toFixed(4)} ETH`, inline: true },
-        { name: '🔢 Total Minted', value: `${fakeQty}`, inline: true }
-      )
-      .setThumbnail('https://via.placeholder.com/400x400.png?text=NFT+Preview')
-      .setColor(0x3498db)
-      .setFooter({ text: 'Simulation Mode • Not Real' })
-      .setTimestamp();
-
-    const buttonUrl = tokenIds.length === 1
-      ? `https://opensea.io/assets/base/${contract.address}/${tokenIds[0]}`
-      : `https://opensea.io/assets/base/${contract.address}`;
-
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setLabel('🔗 View on OpenSea')
-        .setStyle(ButtonStyle.Link)
-        .setURL(buttonUrl)
-    );
-
-    await message.channel.send({ embeds: [embed], components: [row] });
-    await message.reply(':point_up: Simulated embed sent!');
-  }
-});
-
 client.login(process.env.DISCORD_BOT_TOKEN);
+
 
