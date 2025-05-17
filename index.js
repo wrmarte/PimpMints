@@ -1,4 +1,4 @@
-// ✅ CLEAN & CONSISTENT MINT BOT (RESTORED VERSION + DEDUPE + BLOCK TRACKING)
+// ✅ CLEAN & CONSISTENT MINT BOT (WITH BLOCK RANGE FIX)
 require('dotenv').config();
 const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { JsonRpcProvider, Contract, ZeroAddress, id, Interface } = require('ethers');
@@ -99,9 +99,14 @@ client.once('ready', async () => {
   if (!altChannel) console.warn('⚠️ Could not fetch altChannel');
 
   provider.on('block', async (blockNumber) => {
+    const fromBlock = lastBlockChecked + 1;
+    const toBlock = blockNumber;
+
+    if (toBlock < fromBlock) return;
+
     const logs = await provider.getLogs({
-      fromBlock: lastBlockChecked + 1,
-      toBlock: blockNumber,
+      fromBlock,
+      toBlock,
       address: contractAddress,
       topics: [id("Transfer(address,address,uint256)"),
         '0x0000000000000000000000000000000000000000000000000000000000000000']
@@ -233,4 +238,5 @@ client.on('messageCreate', async message => {
 });
 
 client.login(process.env.DISCORD_BOT_TOKEN);
+
 
