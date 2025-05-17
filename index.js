@@ -1,7 +1,9 @@
+// ✅ CLEAN & CONSISTENT MINT BOT (RESTORED VERSION + DEDUPE + BLOCK TRACKING)
 require('dotenv').config();
 const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { JsonRpcProvider, Contract, ZeroAddress, id, Interface } = require('ethers');
 const fetch = require('node-fetch');
+const fs = require('fs');
 
 const client = new Client({
   intents: [
@@ -11,7 +13,6 @@ const client = new Client({
   ],
 });
 
-// --- Multiple RPC Fallback Logic ---
 const rpcUrls = [
   'https://mainnet.base.org',
   'https://developer-access-mainnet.base.org',
@@ -38,6 +39,8 @@ const contractAddress = process.env.CONTRACT_ADDRESS;
 const primaryChannelId = process.env.DISCORD_CHANNEL_ID;
 const extraChannelId = '1322616358944637031';
 const mintPrice = 0.0069;
+const BLOCK_FILE = './lastBlock.json';
+const SEEN_FILE = './seen.json';
 
 const abi = [
   "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)",
@@ -46,14 +49,48 @@ const abi = [
 
 const iface = new Interface(abi);
 const contract = new Contract(contractAddress, abi);
+
+function loadLastBlock() {
+  try {
+    const data = fs.readFileSync(BLOCK_FILE);
+    return parseInt(JSON.parse(data).lastBlock || '0');
+  } catch {
+    return 0;
+  }
+}
+
+function saveLastBlock(block) {
+  fs.writeFileSync(BLOCK_FILE, JSON.stringify({ lastBlock: block }));
+}
+
+function loadSeenTokenIds() {
+  try {
+    return new Set(JSON.parse(fs.readFileSync(SEEN_FILE)));
+  } catch {
+    return new Set();
+  }
+}
+
+function saveSeenTokenIds(seenSet) {
+  fs.writeFileSync(SEEN_FILE, JSON.stringify([...seenSet]));
+}
+
 let lastBlockChecked = 0;
 
 client.once('ready', async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
-
   while (!provider) await new Promise(res => setTimeout(res, 500));
   contract.connect(provider);
-  lastBlockChecked = await provider.getBlockNumber();
+
+  const savedBlock = loadLastBlock();
+  if (savedBlock) {
+    lastBlockChecked = savedBlock;
+  } else {
+    const currentBlock = await provider.getBlockNumber();
+    lastBlockChecked = currentBlock + 1;
+  }
+
+  const seenTokenIds = loadSeenTokenIds();
 
   const mainChannel = await client.channels.fetch(primaryChannelId).catch(() => null);
   const altChannel = await client.channels.fetch(extraChannelId).catch(() => null);
@@ -66,14 +103,26 @@ client.once('ready', async () => {
       fromBlock: lastBlockChecked + 1,
       toBlock: blockNumber,
       address: contractAddress,
-      topics: [id("Transfer(address,address,uint256)")]
+      topics: [id("Transfer(address,address,uint256)"),
+        '0x0000000000000000000000000000000000000000000000000000000000000000']
     });
 
     const mints = [];
     for (const log of logs) {
-      const parsed = iface.parseLog(log);
+      let parsed;
+      try {
+        parsed = iface.parseLog(log);
+      } catch (err) {
+        console.warn(`⚠️ Could not parse log: ${err.message}`);
+        continue;
+      }
+
       const { from, to, tokenId } = parsed.args;
       if (from !== ZeroAddress) continue;
+
+      const tokenIdStr = tokenId.toString();
+      if (seenTokenIds.has(tokenIdStr)) continue;
+      seenTokenIds.add(tokenIdStr);
 
       let tokenUri;
       try {
@@ -128,20 +177,18 @@ client.once('ready', async () => {
           .setURL(buttonUrl)
       );
 
-      try {
-        const channelsToNotify = [mainChannel, altChannel]
-          .filter(c => c && c.id)
-          .reduce((map, c) => map.set(c.id, c), new Map());
+      const channelsToNotify = [mainChannel, altChannel]
+        .filter(c => c && c.id)
+        .reduce((map, c) => map.set(c.id, c), new Map());
 
-        for (const [, channel] of channelsToNotify) {
-          await channel.send({ embeds: [embed], components: [row] });
-        }
-      } catch (err) {
-        console.error('❌ Failed to send embed:', err);
+      for (const [, channel] of channelsToNotify) {
+        await channel.send({ embeds: [embed], components: [row] });
       }
     }
 
     lastBlockChecked = blockNumber;
+    saveLastBlock(blockNumber);
+    saveSeenTokenIds(seenTokenIds);
   });
 });
 
@@ -186,3 +233,4 @@ client.on('messageCreate', async message => {
 });
 
 client.login(process.env.DISCORD_BOT_TOKEN);
+
