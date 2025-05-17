@@ -79,7 +79,10 @@ client.once('ready', async () => {
         fromBlock: lastBlockChecked + 1,
         toBlock,
         address: contract.address,
-        topics: [id("Transfer(address,address,uint256)")]
+        topics: [
+          id("Transfer(address,address,uint256)"),
+          '0x0000000000000000000000000000000000000000000000000000000000000000'
+        ]
       });
 
       const mints = [];
@@ -166,5 +169,6 @@ client.once('ready', async () => {
 });
 
 client.login(process.env.DISCORD_BOT_TOKEN);
+
 
 
