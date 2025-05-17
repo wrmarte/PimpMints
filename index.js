@@ -1,4 +1,4 @@
-// ✅ FINAL FIXED MINT BOT (WITH DEDUPE + BLOCK OFFSET)
+// ✅ FINAL FIXED MINT BOT (WITH PERMANENT DEDUPE + BLOCK OFFSET)
 require('dotenv').config();
 const {
   Client,
@@ -35,6 +35,7 @@ const abi = [
 const iface = new Interface(abi);
 
 const BLOCK_FILE = './lastBlock.json';
+const SEEN_FILE = './seen.json';
 
 function loadLastBlock() {
   try {
@@ -47,6 +48,18 @@ function loadLastBlock() {
 
 function saveLastBlock(block) {
   fs.writeFileSync(BLOCK_FILE, JSON.stringify({ lastBlock: block }));
+}
+
+function loadSeenTokenIds() {
+  try {
+    return new Set(JSON.parse(fs.readFileSync(SEEN_FILE)));
+  } catch {
+    return new Set();
+  }
+}
+
+function saveSeenTokenIds(seenSet) {
+  fs.writeFileSync(SEEN_FILE, JSON.stringify([...seenSet]));
 }
 
 (async () => {
@@ -84,16 +97,16 @@ client.once('ready', async () => {
     lastBlockChecked = savedBlock;
   } else {
     const currentBlock = await provider.getBlockNumber();
-    lastBlockChecked = currentBlock + 1; // ✅ skip current block on first run
+    lastBlockChecked = currentBlock + 1;
   }
+
+  const seenTokenIds = loadSeenTokenIds();
 
   const mainChannel = await client.channels.fetch(primaryChannelId).catch(() => null);
   const altChannel = await client.channels.fetch(extraChannelId).catch(() => null);
 
   if (!mainChannel) console.warn('⚠️ Could not fetch mainChannel');
   if (!altChannel) console.warn('⚠️ Could not fetch altChannel');
-
-  const seenTokenIds = new Set(); // ✅ prevent duplicates per run
 
   provider.on('block', async (blockNumber) => {
     try {
@@ -123,9 +136,9 @@ client.once('ready', async () => {
         const { from, to, tokenId } = parsed.args;
         if (from !== ZeroAddress) continue;
 
-        const tokenKey = `${blockNumber}:${tokenId.toString()}`;
-        if (seenTokenIds.has(tokenKey)) continue; // ✅ skip duplicate
-        seenTokenIds.add(tokenKey);
+        const tokenIdStr = tokenId.toString();
+        if (seenTokenIds.has(tokenIdStr)) continue;
+        seenTokenIds.add(tokenIdStr);
 
         let tokenUri;
         try {
@@ -191,6 +204,7 @@ client.once('ready', async () => {
 
       lastBlockChecked = toBlock;
       saveLastBlock(toBlock);
+      saveSeenTokenIds(seenTokenIds);
     } catch (err) {
       console.error('❌ Block processing error:', err);
     }
