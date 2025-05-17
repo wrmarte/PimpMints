@@ -1,8 +1,16 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const {
+  Client,
+  GatewayIntentBits,
+  EmbedBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle
+} = require('discord.js');
 const { JsonRpcProvider, Contract, ZeroAddress, id, Interface } = require('ethers');
 const fetch = require('node-fetch');
 
+// --- Discord Setup ---
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -11,7 +19,7 @@ const client = new Client({
   ],
 });
 
-// --- Multiple RPC Fallback Logic ---
+// --- Multi-RPC Fallback ---
 const rpcUrls = [
   'https://mainnet.base.org',
   'https://developer-access-mainnet.base.org',
@@ -19,40 +27,44 @@ const rpcUrls = [
 ];
 
 let provider;
+let contract;
+const abi = [
+  "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)",
+  "function tokenURI(uint256 tokenId) view returns (string)"
+];
+const iface = new Interface(abi);
+
 (async () => {
   for (const url of rpcUrls) {
     try {
-      const tempProvider = new JsonRpcProvider(url);
-      await tempProvider.getBlockNumber();
-      provider = tempProvider;
+      const temp = new JsonRpcProvider(url);
+      await temp.getBlockNumber();
+      provider = temp;
       console.log(`✅ Connected to RPC: ${url}`);
       break;
     } catch (err) {
       console.warn(`⚠️ Failed to connect to RPC: ${url}`);
     }
   }
-  if (!provider) throw new Error('❌ All RPC endpoints failed to connect');
+  if (!provider) {
+    console.error('❌ All RPCs failed');
+    process.exit(1);
+  }
+
+  contract = new Contract(process.env.CONTRACT_ADDRESS, abi, provider);
 })();
 
-const contractAddress = process.env.CONTRACT_ADDRESS;
 const primaryChannelId = process.env.DISCORD_CHANNEL_ID;
 const extraChannelId = '1322616358944637031';
 const mintPrice = 0.0069;
-
-const abi = [
-  "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)",
-  "function tokenURI(uint256 tokenId) view returns (string)"
-];
-
-const iface = new Interface(abi);
-const contract = new Contract(contractAddress, abi);
 let lastBlockChecked = 0;
 
+// --- Bot Online ---
 client.once('ready', async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
 
-  while (!provider) await new Promise(res => setTimeout(res, 500));
-  contract.connect(provider);
+  while (!provider || !contract) await new Promise(res => setTimeout(res, 300));
+
   lastBlockChecked = await provider.getBlockNumber();
 
   const mainChannel = await client.channels.fetch(primaryChannelId).catch(() => null);
@@ -62,89 +74,87 @@ client.once('ready', async () => {
   if (!altChannel) console.warn('⚠️ Could not fetch altChannel');
 
   provider.on('block', async (blockNumber) => {
-    const logs = await provider.getLogs({
-      fromBlock: lastBlockChecked + 1,
-      toBlock: blockNumber,
-      address: contractAddress,
-      topics: [id("Transfer(address,address,uint256)")]
-    });
+    try {
+      const logs = await provider.getLogs({
+        fromBlock: lastBlockChecked + 1,
+        toBlock: blockNumber,
+        address: contract.address,
+        topics: [id("Transfer(address,address,uint256)")]
+      });
 
-    const mints = [];
-    for (const log of logs) {
-      const parsed = iface.parseLog(log);
-      const { from, to, tokenId } = parsed.args;
-      if (from !== ZeroAddress) continue;
+      const mints = [];
+      for (const log of logs) {
+        const parsed = iface.parseLog(log);
+        const { from, to, tokenId } = parsed.args;
+        if (from !== ZeroAddress) continue;
 
-      let tokenUri;
-      try {
-        tokenUri = await contract.connect(provider).tokenURI(tokenId);
-        if (tokenUri.startsWith('ipfs://')) {
-          tokenUri = tokenUri.replace('ipfs://', 'https://ipfs.io/ipfs/');
+        let tokenUri;
+        try {
+          tokenUri = await contract.tokenURI(tokenId);
+          if (tokenUri.startsWith('ipfs://')) {
+            tokenUri = tokenUri.replace('ipfs://', 'https://ipfs.io/ipfs/');
+          }
+        } catch (err) {
+          console.warn(`⚠️ Could not get tokenURI for tokenId ${tokenId}:`, err);
+          continue;
         }
-      } catch (err) {
-        console.warn(`⚠️ Could not get tokenURI for tokenId ${tokenId}:`, err);
-        continue;
+
+        let imageUrl = 'https://via.placeholder.com/400x400.png?text=NFT';
+        try {
+          const metadata = await fetch(tokenUri).then(res => res.json());
+          if (metadata?.image) {
+            imageUrl = metadata.image.startsWith('ipfs://')
+              ? metadata.image.replace('ipfs://', 'https://ipfs.io/ipfs/')
+              : metadata.image;
+          }
+        } catch (err) {
+          console.warn(`⚠️ Could not fetch metadata for tokenId ${tokenId}:`, err);
+        }
+
+        mints.push({ to, tokenId, imageUrl });
       }
 
-      let imageUrl = 'https://via.placeholder.com/400x400.png?text=NFT';
-      try {
-        const metadata = await fetch(tokenUri).then(res => res.json());
-        if (metadata?.image) {
-          imageUrl = metadata.image.startsWith('ipfs://')
-            ? metadata.image.replace('ipfs://', 'https://ipfs.io/ipfs/')
-            : metadata.image;
-        }
-      } catch (err) {
-        console.warn(`⚠️ Could not fetch metadata for tokenId ${tokenId}:`, err);
-      }
+      if (mints.length > 0) {
+        const tokenIds = mints.map(m => `#${m.tokenId}`).join(', ');
 
-      mints.push({ to, tokenId, imageUrl });
-    }
+        const embed = new EmbedBuilder()
+          .setTitle('✨ NEW CRYPTOPIMPS MINTS ON BASE!')
+          .setDescription(`Minted by: \`${mints[0].to}\``)
+          .addFields(
+            { name: '🆔 Token IDs', value: tokenIds, inline: false },
+            { name: '💰 ETH Spent', value: `${(mintPrice * mints.length).toFixed(4)} ETH`, inline: true },
+            { name: '🔢 Total Minted', value: `${mints.length}`, inline: true }
+          )
+          .setThumbnail(mints[0].imageUrl)
+          .setColor(219139)
+          .setFooter({ text: 'Mint(s) detected live on Base' })
+          .setTimestamp();
 
-    if (mints.length > 0) {
-      const tokenIds = mints.map(m => `#${m.tokenId}`).join(', ');
+        const buttonUrl = mints.length === 1
+          ? `https://opensea.io/assets/base/${contract.address}/${mints[0].tokenId}`
+          : `https://opensea.io/assets/base/${contract.address}`;
 
-      const embed = new EmbedBuilder()
-        .setTitle('✨ NEW CRYPTOPIMPS MINTS ON BASE!')
-        .setDescription(`Minted by: \`${mints[0].to}\``)
-        .addFields(
-          { name: '🆔 Token IDs', value: tokenIds, inline: false },
-          { name: '💰 ETH Spent', value: `${(mintPrice * mints.length).toFixed(4)} ETH`, inline: true },
-          { name: '🔢 Total Minted', value: `${mints.length}`, inline: true }
-        )
-        .setThumbnail(mints[0].imageUrl)
-        .setColor(219139)
-        .setFooter({ text: 'Mint(s) detected live on Base' })
-        .setTimestamp();
+        const row = new ActionRowBuilder().addComponents(
+          new ButtonBuilder()
+            .setLabel('🔗 View on OpenSea')
+            .setStyle(ButtonStyle.Link)
+            .setURL(buttonUrl)
+        );
 
-      const buttonUrl = mints.length === 1
-        ? `https://opensea.io/assets/base/${contractAddress}/${mints[0].tokenId}`
-        : `https://opensea.io/assets/base/${contractAddress}`;
-
-      const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setLabel('🔗 View on OpenSea')
-          .setStyle(ButtonStyle.Link)
-          .setURL(buttonUrl)
-      );
-
-      try {
-        const channelsToNotify = [mainChannel, altChannel]
-          .filter(c => c && c.id)
-          .reduce((map, c) => map.set(c.id, c), new Map());
-
-        for (const [, channel] of channelsToNotify) {
+        const targets = [mainChannel, altChannel].filter(Boolean);
+        for (const channel of targets) {
           await channel.send({ embeds: [embed], components: [row] });
         }
-      } catch (err) {
-        console.error('❌ Failed to send embed:', err);
       }
-    }
 
-    lastBlockChecked = blockNumber;
+      lastBlockChecked = blockNumber;
+    } catch (err) {
+      console.error('❌ Block processing error:', err);
+    }
   });
 });
 
+// --- Manual test command ---
 client.on('messageCreate', async message => {
   if (message.content === '!mintest') {
     const fakeWallet = '0xDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF';
@@ -165,8 +175,8 @@ client.on('messageCreate', async message => {
       .setTimestamp();
 
     const buttonUrl = tokenIds.length === 1
-      ? `https://opensea.io/assets/base/${contractAddress}/${tokenIds[0]}`
-      : `https://opensea.io/assets/base/${contractAddress}`;
+      ? `https://opensea.io/assets/base/${contract.address}/${tokenIds[0]}`
+      : `https://opensea.io/assets/base/${contract.address}`;
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
@@ -175,13 +185,8 @@ client.on('messageCreate', async message => {
         .setURL(buttonUrl)
     );
 
-    try {
-      await message.channel.send({ embeds: [embed], components: [row] });
-      await message.reply(':point_up: Simulated embed sent!');
-    } catch (err) {
-      console.error('❌ Failed to send embed:', err);
-      await message.reply('⚠️ Failed to send message — check logs.');
-    }
+    await message.channel.send({ embeds: [embed], components: [row] });
+    await message.reply(':point_up: Simulated embed sent!');
   }
 });
 
