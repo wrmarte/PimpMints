@@ -1,4 +1,4 @@
-// ✅ FINAL FIXED MINT BOT (WITH BUFFER_OVERRUN & MEMORY PATCHES)
+// ✅ FINAL FIXED MINT BOT (WITH PERSISTENT BLOCK STORAGE)
 require('dotenv').config();
 const {
   Client,
@@ -10,6 +10,7 @@ const {
 } = require('discord.js');
 const { JsonRpcProvider, Contract, ZeroAddress, id, Interface } = require('ethers');
 const fetch = require('node-fetch');
+const fs = require('fs');
 
 const client = new Client({
   intents: [
@@ -32,6 +33,21 @@ const abi = [
   "function tokenURI(uint256 tokenId) view returns (string)"
 ];
 const iface = new Interface(abi);
+
+const BLOCK_FILE = './lastBlock.json';
+
+function loadLastBlock() {
+  try {
+    const data = fs.readFileSync(BLOCK_FILE);
+    return parseInt(JSON.parse(data).lastBlock || '0');
+  } catch {
+    return 0;
+  }
+}
+
+function saveLastBlock(block) {
+  fs.writeFileSync(BLOCK_FILE, JSON.stringify({ lastBlock: block }));
+}
 
 (async () => {
   for (const url of rpcUrls) {
@@ -63,7 +79,8 @@ client.once('ready', async () => {
 
   while (!provider || !contract) await new Promise(res => setTimeout(res, 300));
 
-  lastBlockChecked = await provider.getBlockNumber();
+  const currentBlock = await provider.getBlockNumber();
+  lastBlockChecked = loadLastBlock() || currentBlock;
 
   const mainChannel = await client.channels.fetch(primaryChannelId).catch(() => null);
   const altChannel = await client.channels.fetch(extraChannelId).catch(() => null);
@@ -162,6 +179,7 @@ client.once('ready', async () => {
       }
 
       lastBlockChecked = toBlock;
+      saveLastBlock(toBlock);
     } catch (err) {
       console.error('❌ Block processing error:', err);
     }
@@ -169,6 +187,3 @@ client.once('ready', async () => {
 });
 
 client.login(process.env.DISCORD_BOT_TOKEN);
-
-
-
