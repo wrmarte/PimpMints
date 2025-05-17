@@ -1,4 +1,4 @@
-// ✅ FINAL FIXED MINT BOT (WITH PERSISTENT BLOCK STORAGE)
+// ✅ FINAL FIXED MINT BOT (WITH DEDUPE + BLOCK OFFSET)
 require('dotenv').config();
 const {
   Client,
@@ -79,14 +79,21 @@ client.once('ready', async () => {
 
   while (!provider || !contract) await new Promise(res => setTimeout(res, 300));
 
-  const currentBlock = await provider.getBlockNumber();
-  lastBlockChecked = loadLastBlock() || currentBlock;
+  const savedBlock = loadLastBlock();
+  if (savedBlock) {
+    lastBlockChecked = savedBlock;
+  } else {
+    const currentBlock = await provider.getBlockNumber();
+    lastBlockChecked = currentBlock + 1; // ✅ skip current block on first run
+  }
 
   const mainChannel = await client.channels.fetch(primaryChannelId).catch(() => null);
   const altChannel = await client.channels.fetch(extraChannelId).catch(() => null);
 
   if (!mainChannel) console.warn('⚠️ Could not fetch mainChannel');
   if (!altChannel) console.warn('⚠️ Could not fetch altChannel');
+
+  const seenTokenIds = new Set(); // ✅ prevent duplicates per run
 
   provider.on('block', async (blockNumber) => {
     try {
@@ -115,6 +122,10 @@ client.once('ready', async () => {
 
         const { from, to, tokenId } = parsed.args;
         if (from !== ZeroAddress) continue;
+
+        const tokenKey = `${blockNumber}:${tokenId.toString()}`;
+        if (seenTokenIds.has(tokenKey)) continue; // ✅ skip duplicate
+        seenTokenIds.add(tokenKey);
 
         let tokenUri;
         try {
